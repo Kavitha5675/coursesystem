@@ -28,7 +28,7 @@ public class CourseManagementService {
     }
 
     public Course getCoursesById(Integer id) {
-        Optional<Course> course = courseRepository.findByCourseId(id);
+        Optional<Course> course = courseRepository.findById(id);
         return course.orElse(null);
     }
 
@@ -48,7 +48,7 @@ public class CourseManagementService {
     }
 
     public Course updateCourses(Integer id, Course updatedCourse) {
-        Optional<Course> optionalCourse = courseRepository.findByCourseId(id);
+        Optional<Course> optionalCourse = courseRepository.findById(id);
         if (optionalCourse.isPresent()) {
             Course existingCourse = optionalCourse.get();
             existingCourse.setName(updatedCourse.getName());
@@ -60,7 +60,7 @@ public class CourseManagementService {
     }
 
     public boolean deleteCourses(Integer id) {
-        Optional<Course> optionalCourse = courseRepository.findByCourseId(id);
+        Optional<Course> optionalCourse = courseRepository.findById(id);
         if (optionalCourse.isPresent()) {
             Course existingCourse = optionalCourse.get();
             courseRepository.delete(existingCourse);

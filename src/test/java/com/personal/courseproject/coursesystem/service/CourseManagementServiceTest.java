@@ -59,13 +59,13 @@ class CourseManagementServiceTest {
 
     @Test
     void should_get_courses_by_id() {
-        when(courseRepository.findByCourseId(1)).thenReturn(ofNullable(course1));
+        when(courseRepository.findById(1)).thenReturn(ofNullable(course1));
         CourseManagementService courseManagementService = new CourseManagementService(courseRepository);
 
         Course courses = courseManagementService.getCoursesById(1);
 
         Assertions.assertEquals(course1, courses);
-        verify(courseRepository, times(1)).findByCourseId(1);
+        verify(courseRepository, times(1)).findById(1);
     }
 
     @Test
@@ -83,7 +83,7 @@ class CourseManagementServiceTest {
     void should_update_course_by_id() {
         course2.setName("API Development using SpringCloud");
         course2.setUpdatedAt(localDateTime);
-        when(courseRepository.findByCourseId(1)).thenReturn(Optional.ofNullable(course2));
+        when(courseRepository.findById(1)).thenReturn(Optional.ofNullable(course2));
         when(courseRepository.save(course2)).thenReturn(course2);
         CourseManagementService courseManagementService = new CourseManagementService(courseRepository);
 
@@ -106,7 +106,7 @@ class CourseManagementServiceTest {
 
     @Test
     void should_delete_course_by_id() {
-        when(courseRepository.findByCourseId(1)).thenReturn(Optional.ofNullable(course2));
+        when(courseRepository.findById(1)).thenReturn(Optional.ofNullable(course2));
         when(courseRepository.save(course2)).thenReturn(course2);
         CourseManagementService courseManagementService = new CourseManagementService(courseRepository);
 
