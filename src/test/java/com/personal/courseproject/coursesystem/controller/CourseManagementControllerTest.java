@@ -1,6 +1,9 @@
-package com.personal.courseproject.coursesystem;
+package com.personal.courseproject.coursesystem.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.personal.courseproject.coursesystem.Course;
+import com.personal.courseproject.coursesystem.exceptions.ErrorResponse;
+import com.personal.courseproject.coursesystem.service.CourseManagementService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Optional.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -25,12 +29,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CourseManagementController.class)
 class CourseManagementControllerTest {
-    private Course courseOne;
-    private Course courseTwo;
-    private Course courseThree;
+
+    private Course newCourse;
     private List<Course> courseList;
     private Course updatedCourse;
-    private Course newCourse;
+    private Course course;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private final Calendar calendar = Calendar.getInstance();
@@ -49,12 +52,9 @@ class CourseManagementControllerTest {
     @BeforeEach
     void setUp() {
         courseList = new ArrayList<>();
-        courseOne = new Course(1, "API Development using SpringBoot", "course description here",
-                LocalDateTime.of(2021, 10, 25, 15, 45, 35), LocalDateTime.of(2021, 10, 26, 15, 45, 35));
-        courseTwo = new Course(2, "Single Page Application using ReactJS", "course description here", LocalDateTime.of(2021, 10, 25, 15, 45, 35), LocalDateTime.of(2021, 10, 26, 15, 45, 35));
-        courseThree = new Course(3, "Infrastructure as Code using Terraform", "course description here", LocalDateTime.of(2021, 10, 25, 15, 45, 35), LocalDateTime.of(2021, 10, 26, 15, 45, 35));
         updatedCourse = new Course("API Development using SpringCloud","course description here");
-        newCourse = new Course("API Development using SpringCloud","course description here");
+        course = new Course("API Development using SpringBoot","course description here");
+        newCourse = new Course("API Development using SpringBoot","course description here");
     }
 
     @Test
@@ -64,61 +64,50 @@ class CourseManagementControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/courses"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
-
         verify(courseManagementService, times(1)).getCourses();
     }
 
     @Test
-    void should_get_list_courses() throws Exception {
-        courseList.add(courseOne);
-        courseList.add(courseTwo);
-        courseList.add(courseThree);
+    void should_get_list_of_courses() throws Exception {
+        courseList.add(course);
         when(courseManagementService.getCourses()).thenReturn(courseList);
         String response = objectMapper.writeValueAsString(courseList);
-
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/courses")
                         .accept(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().json(response));
-
         verify(courseManagementService, times(1)).getCourses();
-
-
     }
 
     @Test
-    void should_get_list_of_courses_by_id() throws Exception {
-        when(courseManagementService.getCoursesById(1)).thenReturn(Optional.ofNullable(courseOne));
-        String response = objectMapper.writeValueAsString(courseOne);
+    void should_get_course_details_by_id() throws Exception {
+        when(courseManagementService.getCoursesById(1)).thenReturn(course);
+        String response = objectMapper.writeValueAsString(course);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/courses/1")
                         .accept(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().json(response));
-
         verify(courseManagementService, times(1)).getCoursesById(1);
-
     }
 
     @Test
-    void should_throw_not_found_exception_when_user_enters_invalid_course_id() throws Exception {
+    void should_not_get_course_if_the_id_is_invalid() throws Exception {
+        when(courseManagementService.getCoursesById(1)).thenReturn(null);
         mockMvc.perform(MockMvcRequestBuilders.get("/api/courses/1")
                         .accept(APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-
         verify(courseManagementService, times(1)).getCoursesById(1);
     }
 
     @Test
     void should_add_courses_successfully() throws Exception {
-        Course course = new Course(1, "API Development using SpringBoot", "course description here", localDateTime, null);
-        Course givenCourse1 = new Course("API Development using SpringBoot", "course description here");
+        Course courseAfterAdded = new Course(1, "API Development using SpringBoot", "course description here", localDateTime, null);
+        when(courseManagementService.addCourses(course)).thenReturn(courseAfterAdded);
+        String requestJson = objectMapper.writeValueAsString(course);
 
-        when(courseManagementService.addCourses(givenCourse1)).thenReturn(course);
-
-        String requestJson = objectMapper.writeValueAsString(givenCourse1);
-        String response = objectMapper.writeValueAsString(course);
+        String response = objectMapper.writeValueAsString(courseAfterAdded);
 
         mockMvc.perform(post("/api/courses").contentType("application/json")
                         .accept("application/json").content(requestJson)).
@@ -127,10 +116,11 @@ class CourseManagementControllerTest {
     }
 
     @Test
-    void should_throw_error_when_course_title_is_not_entered() throws Exception {
-        newCourse.setName(null);
+    void should_not_add_when_course_title_is_not_entered() throws Exception {
+        course.setName(null);
+        when(courseManagementService.addCourses(course)).thenReturn(null);
 
-        String requestJson = objectMapper.writeValueAsString(newCourse);
+        String requestJson = objectMapper.writeValueAsString(course);
 
         mockMvc.perform(post("/api/courses").contentType("application/json")
                         .accept("application/json").content(requestJson)).
@@ -138,8 +128,9 @@ class CourseManagementControllerTest {
     }
 
     @Test
-    void should_throw_error_when_course_title_is_already_entered() throws Exception {
-        String requestJson = objectMapper.writeValueAsString(newCourse);
+    void should_not_add_when_course_title_is_already_present() throws Exception {
+        when(courseManagementService.addCourses(course)).thenReturn(course);
+        String requestJson = objectMapper.writeValueAsString(course);
 
         RequestBuilder requestBuilder1=post("/api/courses")
                 .contentType("application/json")
@@ -149,11 +140,9 @@ class CourseManagementControllerTest {
         mockMvc.perform(requestBuilder1).
                 andExpect(status().isCreated());
 
-        Course course2 = new Course();
-        newCourse.setName("API Development using SpringBoot");
-        newCourse.setDescription("course description");
-        String requestJson2 = objectMapper.writeValueAsString(course2);
+        String requestJson2 = objectMapper.writeValueAsString(newCourse);
 
+        when(courseManagementService.addCourses(course)).thenReturn(null);
         RequestBuilder requestBuilder2=post("/api/courses")
                 .contentType("application/json")
                 .accept("application/json")
@@ -166,17 +155,15 @@ class CourseManagementControllerTest {
 
     @Test
     void should_update_already_added_course_details_by_id()throws Exception {
-        Course updatedCourseResponse = new Course(1, updatedCourse.getName(), updatedCourse.getDescription(), updatedCourse.getCreatedAt(), updatedCourse.getUpdatedAt());
-
-        when(courseManagementService.updateCourses(1,updatedCourse)).thenReturn(updatedCourseResponse);
-
+        Course courseAfterUpdated = new Course(1, "API Development using SpringCloud", "course description here", localDateTime, localDateTime);
+        when(courseManagementService.updateCourses(1,updatedCourse)).thenReturn(courseAfterUpdated);
         String requestJson=objectMapper.writeValueAsString(updatedCourse);
-        String response=objectMapper.writeValueAsString(updatedCourseResponse);
-
         RequestBuilder requestBuilder=put("/api/courses/1")
                 .contentType("application/json")
                 .accept("application/json")
                 .content(requestJson);
+
+        String response=objectMapper.writeValueAsString(courseAfterUpdated);
 
         mockMvc.perform(requestBuilder)
                 .andExpect(status().isCreated()).andExpect(content().json(response));
@@ -185,32 +172,32 @@ class CourseManagementControllerTest {
     @Test
     void should_not_update_when_given_id_is_invalid() throws Exception {
         when(courseManagementService.updateCourses(2,updatedCourse)).thenReturn(null);
-
         String requestJson2=objectMapper.writeValueAsString(updatedCourse);
-
         RequestBuilder requestBuilder2=put("/api/courses/2")
                 .contentType("application/json")
                 .accept("application/json")
                 .content(requestJson2);
 
+        String response=objectMapper.writeValueAsString(new ErrorResponse("Course with id=" + 2 + " not found"));
+
         mockMvc.perform(requestBuilder2)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest()).andExpect(content().json(response));
     }
 
     @Test
     void should_not_update_when_course_title_is_null() throws Exception {
         updatedCourse.setName(null);
         when(courseManagementService.updateCourses(1,updatedCourse)).thenReturn(null);
-
         String requestJson2=objectMapper.writeValueAsString(updatedCourse);
-
         RequestBuilder requestBuilder2=put("/api/courses/1")
                 .contentType("application/json")
                 .accept("application/json")
                 .content(requestJson2);
 
+        String response=objectMapper.writeValueAsString(new ErrorResponse("Course title is required"));
+
         mockMvc.perform(requestBuilder2)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest()).andExpect(content().json(response));
     }
 
     @Test
@@ -227,11 +214,12 @@ class CourseManagementControllerTest {
     @Test
     void should_throw_error_message_when_wants_to_deletes_course_by_invalid_id()throws Exception{
         when(courseManagementService.deleteCourses(1)).thenReturn(false);
-
         RequestBuilder requestBuilder2=delete("/api/courses/1")
                 .contentType("application/json")
                 .accept("application/json");
 
-        mockMvc.perform(requestBuilder2).andExpect(status().isNotFound());
+        String response=objectMapper.writeValueAsString(new ErrorResponse("Course with id=" + 1 + " not found"));
+
+        mockMvc.perform(requestBuilder2).andExpect(status().isNotFound()).andExpect(content().json(response));
     }
 }

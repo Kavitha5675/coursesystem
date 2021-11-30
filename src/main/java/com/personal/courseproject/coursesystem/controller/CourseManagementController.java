@@ -1,7 +1,9 @@
-package com.personal.courseproject.coursesystem;
+package com.personal.courseproject.coursesystem.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.personal.courseproject.coursesystem.Course;
 import com.personal.courseproject.coursesystem.exceptions.ErrorResponse;
+import com.personal.courseproject.coursesystem.service.CourseManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @Component
@@ -29,11 +30,11 @@ public class CourseManagementController {
 
     @GetMapping(value = "/api/courses/{id}")
     public ResponseEntity<Object> getCoursesById(@PathVariable Integer id) {
-        Optional<Course> course = courseManagementService.getCoursesById(id);
-        if (course.isPresent()) {
-            return ResponseEntity.status(HttpStatus.OK).body(course);
+        Course course = courseManagementService.getCoursesById(id);
+        if (course == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        return ResponseEntity.status(HttpStatus.OK).body(course);
     }
 
     @PostMapping(value = "/api/courses", consumes = "application/json", produces = "application/json")
@@ -41,10 +42,10 @@ public class CourseManagementController {
         if (course.getName() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Course title is required"));
         }
-        if (courseManagementService.getCoursesByName(course.getName())) {
+        Course course1 = courseManagementService.addCourses(course);
+        if (course1 == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Course with title " + course.getName() + " already exists"));
         }
-        Course course1 = courseManagementService.addCourses(course);
         return ResponseEntity.status(HttpStatus.CREATED).body(course1);
     }
 

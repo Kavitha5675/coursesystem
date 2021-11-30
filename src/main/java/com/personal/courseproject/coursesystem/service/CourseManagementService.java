@@ -1,5 +1,7 @@
-package com.personal.courseproject.coursesystem;
+package com.personal.courseproject.coursesystem.service;
 
+import com.personal.courseproject.coursesystem.Course;
+import com.personal.courseproject.coursesystem.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,14 +27,18 @@ public class CourseManagementService {
         return courses;
     }
 
-    public Optional<Course> getCoursesById(Integer id) {
-        return courseRepository.findById(id);
+    public Course getCoursesById(Integer id) {
+        Optional<Course> course = courseRepository.findByCourseId(id);
+        return course.orElse(null);
     }
 
     public Course addCourses(Course course) {
+        Optional<Course> optionalCourse = courseRepository.findByName(course.getName());
+        if (optionalCourse.isPresent()) {
+            return null;
+        }
         course.setCreatedAt(LocalDateTime.parse(getFormattedDate()));
         return courseRepository.save(course);
-
     }
 
     protected String getFormattedDate() {
@@ -41,12 +47,8 @@ public class CourseManagementService {
         return dateFormat.format(calendar.getTime());
     }
 
-    public boolean getCoursesByName(String name) {
-        return courseRepository.findByName(name).isPresent();
-    }
-
     public Course updateCourses(Integer id, Course updatedCourse) {
-        Optional<Course> optionalCourse = courseRepository.findById(id);
+        Optional<Course> optionalCourse = courseRepository.findByCourseId(id);
         if (optionalCourse.isPresent()) {
             Course existingCourse = optionalCourse.get();
             existingCourse.setName(updatedCourse.getName());
@@ -58,7 +60,7 @@ public class CourseManagementService {
     }
 
     public boolean deleteCourses(Integer id) {
-        Optional<Course> optionalCourse = courseRepository.findById(id);
+        Optional<Course> optionalCourse = courseRepository.findByCourseId(id);
         if (optionalCourse.isPresent()) {
             Course existingCourse = optionalCourse.get();
             courseRepository.delete(existingCourse);
